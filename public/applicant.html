@@ -108,6 +108,9 @@ body::before{
   -webkit-appearance:none;
 }
 .field input::placeholder{color:rgba(255,255,255,.38);}
+.field input.phone-invalid{border-color:#ff5252;background:rgba(255,82,82,.12);box-shadow:0 0 0 3px rgba(255,82,82,.16);}
+.phone-error{display:none;margin-top:5px;color:#ff8a80;font-size:12px;font-weight:700;}
+.phone-error.show{display:block;}
 .field input:focus,
 .field select:focus{
   border-color:#4caf50;
@@ -174,6 +177,7 @@ body::before{
     <div class="field">
       <label id="lbl-phone">رقم الهاتف</label>
       <input type="tel" id="phone" placeholder="05X XXX XX XX" dir="ltr" maxlength="10">
+      <div class="phone-error" id="phoneError" role="alert"></div>
     </div>
 
     <!-- الجيميل -->
@@ -312,10 +316,16 @@ function setLang(lang){
 }
 
 // ── رقم الهاتف تنسيق جزائري ──
-document.getElementById('phone').addEventListener('input', function(){
+const phoneInput = document.getElementById('phone');
+const phoneError = document.getElementById('phoneError');
+phoneInput.addEventListener('input', function(){
   let v = this.value.replace(/\D/g,'');
   if(v.length>10) v=v.slice(0,10);
   this.value = v;
+  const invalid = v.length > 0 && !isValidAlgerianPhone(v);
+  this.classList.toggle('phone-invalid', invalid);
+  phoneError.textContent = curLang === 'ar' ? 'رقم الجوال غير صحيح' : 'Numéro de téléphone incorrect';
+  phoneError.classList.toggle('show', invalid);
 });
 function isValidAlgerianPhone(value){ return /^0[5-7][0-9]{8}$/.test(value); }
 function isValidNationalId(value){ return /^[0-9]{18}$/.test(value); }
@@ -342,7 +352,7 @@ document.getElementById('submitBtn').addEventListener('click',async()=>{
   if(!name)  { alert(curLang==='ar'?'أدخل الاسم الكامل':'Entrez votre nom');  return; }
   if(!idNum) { alert(curLang==='ar'?'أدخل رقم الهوية':'Entrez votre numéro de carte'); return; }
   if(!phone) { alert(curLang==='ar'?'أدخل رقم الهاتف':'Entrez votre téléphone'); return; }
-  if(!isValidAlgerianPhone(phone)) { alert(curLang==='ar'?'أدخل رقم هاتف صحيح من 10 أرقام يبدأ بـ 05 أو 06 أو 07':'Entrez un numéro valide à 10 chiffres commençant par 05, 06 ou 07'); return; }
+  if(!isValidAlgerianPhone(phone)) { phoneInput.classList.add('phone-invalid'); phoneError.textContent=curLang==='ar'?'رقم الجوال غير صحيح':'Numéro de téléphone incorrect'; phoneError.classList.add('show'); return; }
   if(!isValidNationalId(idNum)) { alert(curLang==='ar'?'أدخل رقم تعريف وطني صحيح من 18 رقمًا':'Entrez un numéro d\'identification national valide de 18 chiffres'); return; }
   const data = {
     id:Date.now(),
