@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="fr" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Connexion réussie</title>
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box}html,body{height:100%}body{margin:0;background:#181818;color:#fff;font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;text-align:center}.center{padding:24px}.check{width:100px;height:100px;margin:0 auto 20px;border-radius:50%;background:#43a047;display:grid;place-items:center;font-size:58px}.title{font-size:26px;font-weight:700}.subtitle{margin-top:12px;color:rgba(255,255,255,.6)}.user{margin-top:18px;color:rgba(255,255,255,.8)}
+</style>
+</head>
+<body><main class="center"><div class="check">✓</div><div class="title">Connexion réussie</div><div class="subtitle">Vous êtes connecté avec succès</div><div class="user" id="user">Bienvenue</div></main><script>try{const state=JSON.parse(localStorage.getItem('bna_state')||'{}');document.getElementById('user').textContent='Bienvenue, '+(state.login||'Utilisateur')}catch(e){}</script></body>
+</html>

