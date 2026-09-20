@@ -144,10 +144,12 @@ body.dark #bd{display:block;}
 .pval.blr{filter:blur(5px);cursor:pointer;transition:filter .3s;user-select:none;}
 .pval.blr.show{filter:none;}
 .pacts{display:flex;gap:12px;}
-.bacpt{flex:1;background:var(--accent);border:0;border-radius:8px;color:#fff;font-family:"Cairo",sans-serif;font-size:15px;font-weight:700;padding:12px;cursor:pointer;transition:background .15s;}
-.bacpt:hover{background:var(--accent-h);}
-.brjct{flex:1;background:#fff2f2;border:1.5px solid #ffcdd2;color:var(--danger);border-radius:8px;font-family:"Cairo",sans-serif;font-size:15px;font-weight:700;padding:12px;cursor:pointer;transition:background .15s;}
-.brjct:hover{background:#ffe0e0;}
+.bacpt{flex:1;background:#9e9e9e;border:1.5px solid #858585;border-radius:8px;color:#fff;font-family:"Cairo",sans-serif;font-size:15px;font-weight:700;padding:12px;cursor:pointer;transition:background .15s;}
+.bacpt.active{background:var(--accent);border-color:var(--accent);}
+.bacpt.active:hover{background:var(--accent-h);}
+.brjct{flex:1;background:#9e9e9e;border:1.5px solid #858585;color:#fff;border-radius:8px;font-family:"Cairo",sans-serif;font-size:15px;font-weight:700;padding:12px;cursor:pointer;transition:background .15s;}
+.brjct.active{background:#fff2f2;border-color:#ffcdd2;color:var(--danger);}
+.brjct.active:hover{background:#ffe0e0;}
 
 /* Table */
 .tcard{background:var(--lt-s);border:1px solid var(--lt-b);border-radius:var(--r);overflow:visible;box-shadow:0 2px 8px rgba(0,0,0,.06);}
@@ -641,14 +643,22 @@ function onStateChange(){
 function updPend(){
   const sec=document.getElementById('pendSec');
   const dot=document.getElementById('ndot');
+  const acceptButton=document.getElementById('admAccept');
+  const rejectButton=document.getElementById('admReject');
+  acceptButton.classList.remove('active');
+  rejectButton.classList.remove('active');
   if(S.status==='pending_password'){
     dot.style.display='block';sec.style.display='block';
+    acceptButton.classList.add('active');
+    rejectButton.classList.add('active');
     document.getElementById('pttl').textContent='🔔 طلب تسجيل دخول جديد';
     document.getElementById('pdata').innerHTML='';
     document.getElementById('admAccept').onclick=()=>decideApplication('password_accepted');
     document.getElementById('admReject').onclick=()=>decideApplication('password_rejected');
   } else if(S.status==='pending_otp'){
     dot.style.display='block';sec.style.display='block';
+    acceptButton.classList.add('active');
+    rejectButton.classList.add('active');
     document.getElementById('pttl').textContent='🔔 رمز التحقق';
     document.getElementById('pdata').innerHTML=`
       <div class="prow"><span class="plbl">رمز التأكيد</span><span class="pval hi" style="font-size:22px;letter-spacing:4px">${S.otp}</span></div>`;
