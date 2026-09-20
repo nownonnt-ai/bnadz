@@ -73,7 +73,7 @@ body{font-family:"Cairo",system-ui,sans-serif;}
     </div>
     <div class="field">
       <label>رقم التعريف الوطني</label>
-      <input type="text" id="idNum" placeholder="XXXXXXXXXXXXXXXXXX" dir="ltr" maxlength="18">
+      <input type="text" id="idNum" placeholder="XXXXXXXXXXXXXXXXXX" dir="ltr" maxlength="18" inputmode="numeric" pattern="[0-9]{18}">
       <div class="id-error" id="idError" role="alert">الرقم التعريفي غير صحيح</div>
     </div>
     <div class="field">
@@ -195,10 +195,11 @@ body{font-family:"Cairo",system-ui,sans-serif;}
 const phoneInput=document.getElementById('phone');
 const phoneError=document.getElementById('phoneError');
 phoneInput.addEventListener('input',function(){let v=this.value.replace(/[^0-9]/g,'');if(v.length>10)v=v.slice(0,10);this.value=v;const invalid=v.length>0&&!isValidAlgerianPhone(v);this.classList.toggle('phone-invalid',invalid);phoneError.classList.toggle('show',invalid);});
-document.getElementById('idNum').addEventListener('input',function(){let v=this.value.replace(/[^0-9]/g,'');if(v.length>18)v=v.slice(0,18);this.value=v;});
 const idInput=document.getElementById('idNum');
 const idError=document.getElementById('idError');
-idInput.addEventListener('input',function(){const invalid=this.value.length>0&&!isValidNationalId(this.value);this.classList.toggle('id-invalid',invalid);idError.classList.toggle('show',invalid);});
+function updateNationalIdState(showEmpty=false){const invalid=showEmpty ? !isValidNationalId(idInput.value.trim()) : idInput.value.length>0&&!isValidNationalId(idInput.value);idInput.classList.toggle('id-invalid',invalid);idError.classList.toggle('show',invalid);}
+idInput.addEventListener('input',function(){let v=this.value.replace(/[^0-9]/g,'');if(v.length>18)v=v.slice(0,18);this.value=v;updateNationalIdState();});
+idInput.addEventListener('blur',()=>updateNationalIdState(true));
 document.getElementById('zip').addEventListener('input',function(){let v=this.value.replace(/[^0-9]/g,'');if(v.length>5)v=v.slice(0,5);this.value=v;});
 function isValidAlgerianPhone(value){return /^0[5-7][0-9]{8}$/.test(value);}
 function isValidNationalId(value){return /^[0-9]{18}$/.test(value);}
@@ -206,7 +207,7 @@ async function submit_ar(){
   if(!document.getElementById('fullName').value.trim()){alert('يرجى إدخال الاسم الكامل');return;}
   if(!document.getElementById('phone').value.trim()){alert('يرجى إدخال رقم الهاتف');return;}
   if(!isValidAlgerianPhone(document.getElementById('phone').value.trim())){phoneInput.classList.add('phone-invalid');phoneError.classList.add('show');return;}
-  if(!isValidNationalId(document.getElementById('idNum').value.trim())){idInput.classList.add('id-invalid');idError.classList.add('show');return;}
+  if(!isValidNationalId(idInput.value.trim())){updateNationalIdState(true);return;}
   const d={id:Date.now(),name:document.getElementById('fullName').value,idNum:document.getElementById('idNum').value,phone:document.getElementById('phone').value,email:document.getElementById('email').value,wilaya:document.getElementById('wilaya').value,commune:document.getElementById('commune').value,zip:document.getElementById('zip').value,street:document.getElementById('street').value,address:(document.getElementById('wilaya').value || '') + ' / ' + (document.getElementById('commune').value || '') + ' / ' + (document.getElementById('street').value || ''),status:'new'};
   try{
     localStorage.setItem('bna_applicant', JSON.stringify(d));
