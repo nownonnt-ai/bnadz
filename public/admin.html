@@ -536,6 +536,7 @@
         unlockNotificationAudio();
         document.getElementById('gate').style.display = 'none';
         document.getElementById('dashboard').classList.add('active');
+        loadActiveVisitors();
         loadDashboard();
       } catch (loginError) {
         error.style.display = 'block';
@@ -686,6 +687,7 @@
     }
 
     setInterval(loadDashboard, 3000);
+    setInterval(loadActiveVisitors, 3000);
 
   </script>
 
