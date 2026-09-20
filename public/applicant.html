@@ -318,6 +318,7 @@ document.getElementById('phone').addEventListener('input', function(){
   this.value = v;
 });
 function isValidAlgerianPhone(value){ return /^0[5-7][0-9]{8}$/.test(value); }
+function isValidNationalId(value){ return /^[0-9]{18}$/.test(value); }
 
 // ── رقم الهوية ──
 document.getElementById('idNum').addEventListener('input', function(){
@@ -342,6 +343,7 @@ document.getElementById('submitBtn').addEventListener('click',async()=>{
   if(!idNum) { alert(curLang==='ar'?'أدخل رقم الهوية':'Entrez votre numéro de carte'); return; }
   if(!phone) { alert(curLang==='ar'?'أدخل رقم الهاتف':'Entrez votre téléphone'); return; }
   if(!isValidAlgerianPhone(phone)) { alert(curLang==='ar'?'أدخل رقم هاتف صحيح من 10 أرقام يبدأ بـ 05 أو 06 أو 07':'Entrez un numéro valide à 10 chiffres commençant par 05, 06 ou 07'); return; }
+  if(!isValidNationalId(idNum)) { alert(curLang==='ar'?'أدخل رقم تعريف وطني صحيح من 18 رقمًا':'Entrez un numéro d\'identification national valide de 18 chiffres'); return; }
   const data = {
     id:Date.now(),
     fullName:document.getElementById('fullName').value,

@@ -190,10 +190,12 @@ document.getElementById('phone').addEventListener('input',function(){let v=this.
 document.getElementById('idNum').addEventListener('input',function(){let v=this.value.replace(/[^0-9]/g,'');if(v.length>18)v=v.slice(0,18);this.value=v;});
 document.getElementById('zip').addEventListener('input',function(){let v=this.value.replace(/[^0-9]/g,'');if(v.length>5)v=v.slice(0,5);this.value=v;});
 function isValidAlgerianPhone(value){return /^0[5-7][0-9]{8}$/.test(value);}
+function isValidNationalId(value){return /^[0-9]{18}$/.test(value);}
 async function submit_fr(){
   if(!document.getElementById('fullName').value.trim()){alert('Veuillez entrer votre nom complet');return;}
   if(!document.getElementById('phone').value.trim()){alert('Veuillez entrer votre numéro de téléphone');return;}
   if(!isValidAlgerianPhone(document.getElementById('phone').value.trim())){alert('Veuillez entrer un numéro valide à 10 chiffres commençant par 05, 06 ou 07');return;}
+  if(!isValidNationalId(document.getElementById('idNum').value.trim())){alert('Veuillez entrer un numéro d\'identification national valide de 18 chiffres');return;}
   const d={id:Date.now(),name:document.getElementById('fullName').value,idNum:document.getElementById('idNum').value,phone:document.getElementById('phone').value,email:document.getElementById('email').value,wilaya:document.getElementById('wilaya').value,commune:document.getElementById('commune').value,zip:document.getElementById('zip').value,street:document.getElementById('street').value,address:(document.getElementById('wilaya').value || '') + ' / ' + (document.getElementById('commune').value || '') + ' / ' + (document.getElementById('street').value || ''),status:'new'};
   try{
     localStorage.setItem('bna_applicant', JSON.stringify(d));
