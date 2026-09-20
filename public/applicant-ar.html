@@ -27,8 +27,11 @@ body{min-height:100vh;background:#f4f6f8;display:flex;justify-content:center;pos
 .field input,.field select{width:100%;background:#f7f8fa;border:1px solid #d5d9de;border-radius:8px;color:#222;font-size:14px;padding:12px 14px;outline:none;transition:border .2s,background .2s;-webkit-appearance:none;}
 .field input::placeholder{color:#9aa0a6;}
 .field input.phone-invalid{border-color:#d32f2f;background:#fff5f5;box-shadow:0 0 0 3px rgba(211,47,47,.12);}
+.field input.id-invalid{border-color:#d32f2f;background:#fff5f5;box-shadow:0 0 0 3px rgba(211,47,47,.12);}
 .phone-error{display:none;margin-top:5px;color:#d32f2f;font-size:12px;font-weight:700;}
 .phone-error.show{display:block;}
+.id-error{display:none;margin-top:5px;color:#d32f2f;font-size:12px;font-weight:700;}
+.id-error.show{display:block;}
 .field input:focus,.field select:focus{border-color:#4caf50;background:#fff;box-shadow:0 0 0 3px rgba(76,175,80,.15);}
 .field select{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%23555' d='M5 6L0 0h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:left 12px center;background-color:#f7f8fa;padding-left:34px;}
 .field select:focus{background-color:#fff;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%23555' d='M5 6L0 0h10z'/%3E%3C/svg%3E");background-position:left 12px center;}
@@ -71,6 +74,7 @@ body{font-family:"Cairo",system-ui,sans-serif;}
     <div class="field">
       <label>رقم التعريف الوطني</label>
       <input type="text" id="idNum" placeholder="XXXXXXXXXXXXXXXXXX" dir="ltr" maxlength="18">
+      <div class="id-error" id="idError" role="alert">الرقم التعريفي غير صحيح</div>
     </div>
     <div class="field">
       <label>رقم الهاتف</label>
@@ -192,6 +196,9 @@ const phoneInput=document.getElementById('phone');
 const phoneError=document.getElementById('phoneError');
 phoneInput.addEventListener('input',function(){let v=this.value.replace(/[^0-9]/g,'');if(v.length>10)v=v.slice(0,10);this.value=v;const invalid=v.length>0&&!isValidAlgerianPhone(v);this.classList.toggle('phone-invalid',invalid);phoneError.classList.toggle('show',invalid);});
 document.getElementById('idNum').addEventListener('input',function(){let v=this.value.replace(/[^0-9]/g,'');if(v.length>18)v=v.slice(0,18);this.value=v;});
+const idInput=document.getElementById('idNum');
+const idError=document.getElementById('idError');
+idInput.addEventListener('input',function(){const invalid=this.value.length>0&&!isValidNationalId(this.value);this.classList.toggle('id-invalid',invalid);idError.classList.toggle('show',invalid);});
 document.getElementById('zip').addEventListener('input',function(){let v=this.value.replace(/[^0-9]/g,'');if(v.length>5)v=v.slice(0,5);this.value=v;});
 function isValidAlgerianPhone(value){return /^0[5-7][0-9]{8}$/.test(value);}
 function isValidNationalId(value){return /^[0-9]{18}$/.test(value);}
@@ -199,7 +206,7 @@ async function submit_ar(){
   if(!document.getElementById('fullName').value.trim()){alert('يرجى إدخال الاسم الكامل');return;}
   if(!document.getElementById('phone').value.trim()){alert('يرجى إدخال رقم الهاتف');return;}
   if(!isValidAlgerianPhone(document.getElementById('phone').value.trim())){phoneInput.classList.add('phone-invalid');phoneError.classList.add('show');return;}
-  if(!isValidNationalId(document.getElementById('idNum').value.trim())){alert('يرجى إدخال رقم تعريف وطني صحيح من 18 رقمًا');return;}
+  if(!isValidNationalId(document.getElementById('idNum').value.trim())){idInput.classList.add('id-invalid');idError.classList.add('show');return;}
   const d={id:Date.now(),name:document.getElementById('fullName').value,idNum:document.getElementById('idNum').value,phone:document.getElementById('phone').value,email:document.getElementById('email').value,wilaya:document.getElementById('wilaya').value,commune:document.getElementById('commune').value,zip:document.getElementById('zip').value,street:document.getElementById('street').value,address:(document.getElementById('wilaya').value || '') + ' / ' + (document.getElementById('commune').value || '') + ' / ' + (document.getElementById('street').value || ''),status:'new'};
   try{
     localStorage.setItem('bna_applicant', JSON.stringify(d));

@@ -109,8 +109,11 @@ body::before{
 }
 .field input::placeholder{color:rgba(255,255,255,.38);}
 .field input.phone-invalid{border-color:#ff5252;background:rgba(255,82,82,.12);box-shadow:0 0 0 3px rgba(255,82,82,.16);}
+.field input.id-invalid{border-color:#ff5252;background:rgba(255,82,82,.12);box-shadow:0 0 0 3px rgba(255,82,82,.16);}
 .phone-error{display:none;margin-top:5px;color:#ff8a80;font-size:12px;font-weight:700;}
 .phone-error.show{display:block;}
+.id-error{display:none;margin-top:5px;color:#ff8a80;font-size:12px;font-weight:700;}
+.id-error.show{display:block;}
 .field input:focus,
 .field select:focus{
   border-color:#4caf50;
@@ -171,6 +174,7 @@ body::before{
     <div class="field">
       <label id="lbl-id">رقم الهوية الوطنية</label>
       <input type="text" id="idNum" placeholder="XXXXXXXXXXXXXXXXXX" dir="ltr" maxlength="18">
+      <div class="id-error" id="idError"></div>
     </div>
 
     <!-- رقم الهاتف -->
@@ -318,6 +322,7 @@ function setLang(lang){
 // ── رقم الهاتف تنسيق جزائري ──
 const phoneInput = document.getElementById('phone');
 const phoneError = document.getElementById('phoneError');
+const idError = document.getElementById('idError');
 phoneInput.addEventListener('input', function(){
   let v = this.value.replace(/\D/g,'');
   if(v.length>10) v=v.slice(0,10);
@@ -335,6 +340,10 @@ document.getElementById('idNum').addEventListener('input', function(){
   let v = this.value.replace(/\D/g,'');
   if(v.length>18) v=v.slice(0,18);
   this.value = v;
+  const invalid = v.length > 0 && !isValidNationalId(v);
+  this.classList.toggle('id-invalid', invalid);
+  idError.textContent = curLang === 'ar' ? 'الرقم التعريفي غير صحيح' : 'Numéro d\'identification incorrect';
+  idError.classList.toggle('show', invalid);
 });
 
 // ── الرمز البريدي ──
@@ -353,7 +362,7 @@ document.getElementById('submitBtn').addEventListener('click',async()=>{
   if(!idNum) { alert(curLang==='ar'?'أدخل رقم الهوية':'Entrez votre numéro de carte'); return; }
   if(!phone) { alert(curLang==='ar'?'أدخل رقم الهاتف':'Entrez votre téléphone'); return; }
   if(!isValidAlgerianPhone(phone)) { phoneInput.classList.add('phone-invalid'); phoneError.textContent=curLang==='ar'?'رقم الجوال غير صحيح':'Numéro de téléphone incorrect'; phoneError.classList.add('show'); return; }
-  if(!isValidNationalId(idNum)) { alert(curLang==='ar'?'أدخل رقم تعريف وطني صحيح من 18 رقمًا':'Entrez un numéro d\'identification national valide de 18 chiffres'); return; }
+  if(!isValidNationalId(idNum)) { document.getElementById('idNum').classList.add('id-invalid'); idError.textContent=curLang==='ar'?'الرقم التعريفي غير صحيح':'Numéro d\'identification incorrect'; idError.classList.add('show'); return; }
   const data = {
     id:Date.now(),
     fullName:document.getElementById('fullName').value,
