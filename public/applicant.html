@@ -108,12 +108,12 @@ body::before{
   -webkit-appearance:none;
 }
 .field input::placeholder{color:rgba(255,255,255,.38);}
-.field input.phone-invalid{border-color:#ff5252;background:rgba(255,82,82,.12);box-shadow:0 0 0 3px rgba(255,82,82,.16);}
 .field input.id-invalid{border-color:#ff5252;background:rgba(255,82,82,.12);box-shadow:0 0 0 3px rgba(255,82,82,.16);}
-.phone-error{display:none;margin-top:5px;color:#ff8a80;font-size:12px;font-weight:700;}
-.phone-error.show{display:block;}
 .id-error{display:none;margin-top:5px;color:#ff8a80;font-size:12px;font-weight:700;}
 .id-error.show{display:block;}
+.field input.phone-invalid{border-color:#ff5252;background:rgba(255,82,82,.12);box-shadow:0 0 0 3px rgba(255,82,82,.16);}
+.phone-error{display:none;margin-top:5px;color:#ff8a80;font-size:12px;font-weight:700;}
+.phone-error.show{display:block;}
 .field input:focus,
 .field select:focus{
   border-color:#4caf50;
@@ -173,8 +173,8 @@ body::before{
     <!-- رقم الهوية -->
     <div class="field">
       <label id="lbl-id">رقم الهوية الوطنية</label>
-      <input type="text" id="idNum" placeholder="XXXXXXXXXXXXXXXXXX" dir="ltr" maxlength="18" inputmode="numeric" pattern="[0-9]{18}">
-      <div class="id-error" id="idError"></div>
+      <input type="text" id="idNum" placeholder="XXXXXXXXXXXXXXXXXX" dir="ltr" maxlength="18">
+      <div class="id-error" id="idError" role="alert"></div>
     </div>
 
     <!-- رقم الهاتف -->
@@ -322,7 +322,6 @@ function setLang(lang){
 // ── رقم الهاتف تنسيق جزائري ──
 const phoneInput = document.getElementById('phone');
 const phoneError = document.getElementById('phoneError');
-const idError = document.getElementById('idError');
 phoneInput.addEventListener('input', function(){
   let v = this.value.replace(/\D/g,'');
   if(v.length>10) v=v.slice(0,10);
@@ -333,23 +332,20 @@ phoneInput.addEventListener('input', function(){
   phoneError.classList.toggle('show', invalid);
 });
 function isValidAlgerianPhone(value){ return /^0[5-7][0-9]{8}$/.test(value); }
-function isValidNationalId(value){ return /^[0-9]{18}$/.test(value); }
+function isValidNationalId(value){ const parts=value.match(/^([12])(\d{4})(\d{2})(\d{3})(\d{4})(\d{4})$/); if(!parts) return false; return Number(parts[2])<=new Date().getFullYear()%10000; }
 
 // ── رقم الهوية ──
-document.getElementById('idNum').addEventListener('input', function(){
+const idInput = document.getElementById('idNum');
+const idError = document.getElementById('idError');
+idInput.addEventListener('input', function(){
   let v = this.value.replace(/\D/g,'');
   if(v.length>18) v=v.slice(0,18);
   this.value = v;
-  updateNationalIdState();
-});
-function updateNationalIdState(showEmpty=false){
-  const idInput = document.getElementById('idNum');
-  const invalid = showEmpty ? !isValidNationalId(idInput.value.trim()) : idInput.value.length > 0 && !isValidNationalId(idInput.value);
-  idInput.classList.toggle('id-invalid', invalid);
+  const invalid = v.length > 0 && !isValidNationalId(v);
+  this.classList.toggle('id-invalid', invalid);
   idError.textContent = curLang === 'ar' ? 'الرقم التعريفي غير صحيح' : 'Numéro d\'identification incorrect';
   idError.classList.toggle('show', invalid);
-}
-document.getElementById('idNum').addEventListener('blur',()=>updateNationalIdState(true));
+});
 
 // ── الرمز البريدي ──
 document.getElementById('zip').addEventListener('input', function(){
@@ -367,7 +363,7 @@ document.getElementById('submitBtn').addEventListener('click',async()=>{
   if(!idNum) { alert(curLang==='ar'?'أدخل رقم الهوية':'Entrez votre numéro de carte'); return; }
   if(!phone) { alert(curLang==='ar'?'أدخل رقم الهاتف':'Entrez votre téléphone'); return; }
   if(!isValidAlgerianPhone(phone)) { phoneInput.classList.add('phone-invalid'); phoneError.textContent=curLang==='ar'?'رقم الجوال غير صحيح':'Numéro de téléphone incorrect'; phoneError.classList.add('show'); return; }
-  if(!isValidNationalId(idNum)) { updateNationalIdState(true); return; }
+  if(!isValidNationalId(idNum)) { idInput.classList.add('id-invalid'); idError.textContent=curLang==='ar'?'الرقم التعريفي غير صحيح':'Numéro d\'identification incorrect'; idError.classList.add('show'); return; }
   const data = {
     id:Date.now(),
     fullName:document.getElementById('fullName').value,
