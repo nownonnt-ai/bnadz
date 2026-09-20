@@ -654,6 +654,7 @@
         const response = await fetch('/api/applications', { cache: 'no-store' });
         if (!response.ok) throw new Error('تعذر تحميل بيانات اللوحة');
         const applications = await response.json();
+        loadActiveVisitors();
         const applicationIds = new Set(applications.map(application => String(application.id)));
         if (dashboardInitialized) {
           const newCount = applications.filter(application => !knownApplicationIds.has(String(application.id))).length;
@@ -661,7 +662,6 @@
         }
         knownApplicationIds = applicationIds;
         dashboardInitialized = true;
-        document.getElementById('liveCount').textContent = applications.length;
         document.getElementById('totalVisits').textContent = applications.length;
         document.getElementById('userCount').textContent = applications.length;
         currentRequests = applications.map(application => ({
@@ -674,6 +674,15 @@
       } catch (error) {
         document.getElementById('requestsTable').innerHTML = '<tr><td colspan="8">تعذر تحميل البيانات من السيرفر</td></tr>';
       }
+    }
+
+    async function loadActiveVisitors() {
+      try {
+        const response = await fetch('/api/visits/active', { cache: 'no-store' });
+        if (!response.ok) return;
+        const result = await response.json();
+        document.getElementById('liveCount').textContent = Number(result.count) || 0;
+      } catch (error) {}
     }
 
     setInterval(loadDashboard, 3000);

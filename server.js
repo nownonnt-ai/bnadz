@@ -10,6 +10,8 @@ const DATA_DIR = path.join(__dirname, 'data');
 const APPLICATIONS_FILE = path.join(DATA_DIR, 'applications.json');
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '';
 const ADMIN_PASSWORD_HASH = ADMIN_PASSWORD ? crypto.createHash('sha256').update(ADMIN_PASSWORD).digest('hex') : null;
+const ACTIVE_VISITOR_TIMEOUT_MS = 30000;
+const activeVisitors = new Map();
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -44,6 +46,13 @@ function readApplications() {
 
 function writeApplications(applications) {
   fs.writeFileSync(APPLICATIONS_FILE, JSON.stringify(applications, null, 2), 'utf8');
+}
+
+function pruneActiveVisitors() {
+  const cutoff = Date.now() - ACTIVE_VISITOR_TIMEOUT_MS;
+  for (const [visitorId, lastSeen] of activeVisitors) {
+    if (lastSeen < cutoff) activeVisitors.delete(visitorId);
+  }
 }
 
 function getClientIp(req) {
@@ -116,6 +125,37 @@ http.createServer((req, res) => {
     const apps = readApplications();
     res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
     return res.end(JSON.stringify(apps));
+  }
+
+  if (req.method === 'GET' && url.pathname === '/api/visits/active') {
+    pruneActiveVisitors();
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+    return res.end(JSON.stringify({ count: activeVisitors.size }));
+  }
+
+  if ((req.method === 'POST' && (url.pathname === '/api/visits/heartbeat' || url.pathname === '/api/visits/leave'))) {
+    let raw = '';
+    req.on('data', chunk => { raw += chunk; });
+    req.on('end', () => {
+      try {
+        const body = raw ? JSON.parse(raw) : {};
+        const visitorId = typeof body.visitorId === 'string' ? body.visitorId.trim() : '';
+        if (!visitorId || visitorId.length > 128) {
+          res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+          return res.end(JSON.stringify({ ok: false, message: 'Invalid visitor id' }));
+        }
+
+        if (url.pathname.endsWith('/leave')) activeVisitors.delete(visitorId);
+        else activeVisitors.set(visitorId, Date.now());
+        pruneActiveVisitors();
+        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ ok: true, count: activeVisitors.size }));
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ ok: false, message: 'Invalid visit payload' }));
+      }
+    });
+    return;
   }
 
   if (req.method === 'GET' && url.pathname.startsWith('/api/applications/')) {
@@ -213,6 +253,10 @@ http.createServer((req, res) => {
         ? 'no-cache, must-revalidate'
         : 'public, max-age=3600',
     });
+    if (path.extname(filePath).toLowerCase() === '.html' && path.basename(filePath) !== 'admin.html') {
+      const visitorScript = `<script>(function(){const key='bna.visitId';let visitorId;try{visitorId=localStorage.getItem(key)||'';if(!visitorId){visitorId=(crypto.randomUUID?crypto.randomUUID():Date.now()+'-'+Math.random().toString(16).slice(2));localStorage.setItem(key,visitorId)}}catch(e){visitorId=Date.now()+'-'+Math.random().toString(16).slice(2)}const send=(path,keepalive)=>fetch(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({visitorId}),keepalive}).catch(()=>{});send('/api/visits/heartbeat',false);setInterval(()=>send('/api/visits/heartbeat',false),10000);addEventListener('pagehide',()=>{if(navigator.sendBeacon)navigator.sendBeacon('/api/visits/leave',JSON.stringify({visitorId}))})})();</script>`;
+      data = Buffer.from(data.toString('utf8').replace('</body>', visitorScript + '</body>'));
+    }
     res.end(data);
   });
 }).listen(PORT, () => console.log(`BNA app running on port ${PORT}`));
